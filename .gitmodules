@@ -1,0 +1,15 @@
+[submodule "AXL"]
+	path = AXL
+	url = https://github.com/revk/AXL
+[submodule "QR"]
+	path = QR
+	url = https://github.com/revk/QR
+[submodule "Image"]
+	path = Image
+	url = https://github.com/revk/Image
+[submodule "Reedsol"]
+	path = Reedsol
+	url = https://github.com/revk/Reedsol
+[submodule "1dbar"]
+	path = 1dbar
+	url = https://github.com/revk/1dbar
