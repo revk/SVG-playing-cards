@@ -16,7 +16,7 @@ Readsol/reedsol.o: Readsol/reedsol.c
 Image/image.o: Image/image.c
 	make -C Image
 1dbar/1dbar.o: 1dbar/1dbar.c
-	make -C 1dbar
+	make -C 1dbar 1dbar.o
 
 clean:
 	rm -f $(ALL) $(MORE)
@@ -35,4 +35,4 @@ makecourt: makecourt.c Makefile AXL/axl.o
 
 SVGFILES := $(wildcard ../svg/??.svg)
 court.h: makecourt ${SVGFILES}
-	../bin/makecourt
+	./makecourt
