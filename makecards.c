@@ -15,8 +15,6 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <err.h>
-#include <signal.h>
-#include <execinfo.h>
 #include <axl.h>
 #include <iec18004.h>
 #include <image.h>
@@ -1374,7 +1372,6 @@ makecard (char suit, char value)
 int
 main (int argc, const char *argv[])
 {
-#include <trace.h>
    {                            // POPT
       poptContext optCon;       // context for parsing command-line options
       const struct poptOption optionsTable[] = {

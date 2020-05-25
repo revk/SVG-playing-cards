@@ -1,3 +1,3 @@
 # SVG playing cards
 
-TODO
+Tools to make a wide selection of playing cards in SVG format.
