@@ -263,7 +263,7 @@ addsymbolM (xml_t e, char suit, char value)
    xml_t root = xml_tree_root (e);
    char id[4] = { suit, value, 'M' };
    xml_t defs = xml_find (root, "defs");
-   if (!defs || !findid (root, id))
+   if (!defs || !findid (defs, id))
    {
       if (!defs)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
@@ -303,7 +303,7 @@ addsymbolsuit (xml_t e, char suit, char value, int *notfilledp)
    xml_t root = xml_tree_root (e);
    char id[4] = { 'S', suit, value };
    xml_t defs = xml_find (root, "defs");
-   if (!defs || !findid (root, id))
+   if (!defs || !findid (defs, id))
    {
       if (!defs)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
@@ -339,7 +339,7 @@ addsymbolvalue (xml_t e, char suit, char value)
    xml_t root = xml_tree_root (e);
    char id[4] = { 'V', suit, value };
    xml_t defs = xml_find (root, "defs");
-   if (!defs || !findid (root, id))
+   if (!defs || !findid (defs, id))
    {
       if (!defs)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
@@ -370,7 +370,7 @@ addsymbolAA (xml_t e)
    xml_t root = xml_tree_root (e);
    char *id = "AA";
    xml_t defs = xml_find (root, "defs");
-   if (!defs || !findid (root, id))
+   if (!defs || !findid (defs, id))
    {
       if (!defs)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
@@ -396,7 +396,7 @@ addsymbolFB (xml_t e)
    xml_t root = xml_tree_root (e);
    char *id = "FB";
    xml_t defs = xml_find (root, "defs");
-   if (!defs || !findid (root, id))
+   if (!defs || !findid (defs, id))
    {
       if (!defs)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
