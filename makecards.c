@@ -548,7 +548,7 @@ makecourt (xml_t root, char suit, char value)
          xml_t defs = xml_find (root, "defs");
          if (!defs)
             defs = xml_element_add_ns_after (root, NULL, "defs", root);
-         xml_t symbol = xml_element_add_ns_after (defs, NULL, "symbol", defs);
+         symbol = xml_element_add_ns_after (defs, NULL, "symbol", defs);
          xml_addf (symbol, "@id", "%c%c%d", suit, value, ++layer);
          xml_add (symbol, "@preserveAspectRatio", "none");      // Stretch to required size both ways
          xml_add (symbol, "@viewBox", "0 0 1300 2000");
