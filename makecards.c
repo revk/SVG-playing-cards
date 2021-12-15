@@ -252,6 +252,16 @@ addclippathQ (xml_t e, char suit)
    return e;
 }
 
+
+xml_t
+addsymbol (xml_t root)
+{
+   xml_t defs = xml_find (root, "defs");
+   if (!defs)
+      defs = xml_element_add_ns_after (root, NULL, "defs", root);
+   return xml_element_add_ns_after (defs, NULL, "symbol", root);
+}
+
 xml_t
 addsymbolM (xml_t e, char suit, char value)
 {
@@ -264,7 +274,7 @@ addsymbolM (xml_t e, char suit, char value)
    char id[4] = { suit, value, 'M' };
    if (!findid (root, id))
    {
-      xml_t symbol = xml_element_add_ns_after (root, NULL, "symbol", root);
+      xml_t symbol = addsymbol (root);
       xml_add (symbol, "@id", id);
       xml_add (symbol, "@viewBox", "0 0 137 1");        // 8 wide edges, 11 wide bars
       xml_add (symbol, "@preserveAspectRatio", "none");
@@ -302,7 +312,7 @@ addsymbolsuit (xml_t e, char suit, char value, int *notfilledp)
    if (!findid (root, id))
    {
       char *s = strchr (suits, suit);
-      xml_t symbol = xml_element_add_ns_after (root, NULL, "symbol", root);
+      xml_t symbol = addsymbol (root);
       xml_add (symbol, "@id", id);
       xml_add (symbol, "@viewBox", "-600 -600 1200 1200");
       xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
@@ -336,7 +346,7 @@ addsymbolvalue (xml_t e, char suit, char value)
    {
       char *s = strchr (suits, suit);
       char *v = strchr (values, value);
-      xml_t symbol = xml_element_add_ns_after (root, NULL, "symbol", root);
+      xml_t symbol = addsymbol (root);
       xml_add (symbol, "@id", id);
       xml_add (symbol, "@viewBox", "-500 -500 1000 1000");
       xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
@@ -362,7 +372,7 @@ addsymbolAA (xml_t e)
    char *id = "AA";
    if (!findid (root, id))
    {
-      xml_t symbol = xml_element_add_ns_after (root, NULL, "symbol", root);
+      xml_t symbol = addsymbol (root);
       xml_add (symbol, "@id", id);
       xml_add (symbol, "@viewBox", "-505 -505 1010 1010");
       xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
@@ -385,7 +395,7 @@ addsymbolFB (xml_t e)
    char *id = "FB";
    if (!findid (root, id))
    {
-      xml_t symbol = xml_element_add_ns_after (root, NULL, "symbol", root);
+      xml_t symbol = addsymbol (root);
       xml_add (symbol, "@id", id);
       xml_add (symbol, "@viewBox", "0 0 150 120");
       xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
@@ -530,7 +540,7 @@ makecourt (xml_t root, char suit, char value)
       {
          if (!path[n] || !*path[n])
             return;
-         symbol = xml_element_add (root, "symbol");
+         xml_t symbol = addsymbol (root);
          xml_addf (symbol, "@id", "%c%c%d", suit, value, ++layer);
          xml_add (symbol, "@preserveAspectRatio", "none");      // Stretch to required size both ways
          xml_add (symbol, "@viewBox", "0 0 1300 2000");
