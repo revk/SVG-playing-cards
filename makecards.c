@@ -259,7 +259,7 @@ addsymbol (xml_t root)
    xml_t defs = xml_find (root, "defs");
    if (!defs)
       defs = xml_element_add_ns_after (root, NULL, "defs", root);
-   return xml_element_add_ns_after (defs, NULL, "symbol", root);
+   return xml_element_add_ns_after (defs, NULL, "symbol", defs);
 }
 
 xml_t
