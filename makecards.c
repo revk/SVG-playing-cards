@@ -492,16 +492,6 @@ makebackground (xml_t root, char suit, char value)
 void
 writecard (xml_t root, char suit, char value)
 {                               // Write out
-   char *fn;
-   if (number)
-   {
-      if (!asprintf (&fn, "%s%03d%s.svg", prefix, number++, suffix))
-         errx (1, "Malloc");
-   } else
-   {
-      if (!asprintf (&fn, "%s%c%c%s.svg", prefix, value, suit, suffix))
-         errx (1, "Malloc");
-   }
    if (writeinline)
    {
       if (card)
@@ -509,6 +499,16 @@ writecard (xml_t root, char suit, char value)
       xml_element_write (stdout, root, 1, 1);
    } else
    {
+      char *fn;
+      if (number)
+      {
+         if (!asprintf (&fn, "%s%03d%s.svg", prefix, number++, suffix))
+            errx (1, "Malloc");
+      } else
+      {
+         if (!asprintf (&fn, "%s%c%c%s.svg", prefix, value, suit, suffix))
+            errx (1, "Malloc");
+      }
       FILE *f = f = fopen (fn, "w");
       if (!f)
          err (1, "Cannot write %s", fn);
