@@ -1243,7 +1243,7 @@ makecard (char suit, char value)
                pip (0, 0, bw);  // Simple big Ace
             if (suit == 'S' && qr)
             {                   // QR on ace
-               int S = 0;
+               unsigned int S = 0;
                unsigned char *grid = qr_encode (strlen (qr), qr, 0, QR_ECL_L, 0, 0, &S, 0, 0, 0, 0);
                if (grid)
                {
