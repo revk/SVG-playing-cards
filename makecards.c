@@ -66,6 +66,7 @@ int grey = 0;
 int fourcolour = 0;
 int pipn = 1;
 int valuen = 0;
+int duplimate = 0;
 const char *back = "Diamond";
 const char *ace = "Fancy";
 const char *ace1 = "www.me.uk";
@@ -82,7 +83,6 @@ const char *prefix = "";
 const char *suffix = "";
 const char *width = "2.5in";
 const char *height = "3.5in";
-const char *duplimate = NULL;
 const char *backcolour = NULL;
 const char *backimage = NULL;
 const char *frontcolour = NULL;
@@ -492,6 +492,16 @@ makebackground (xml_t root, char suit, char value)
 void
 writecard (xml_t root, char suit, char value)
 {                               // Write out
+   char *fn;
+   if (number)
+   {
+      if (!asprintf (&fn, "%s%03d%s.svg", prefix, number++, suffix))
+         errx (1, "Malloc");
+   } else
+   {
+      if (!asprintf (&fn, "%s%c%c%s.svg", prefix, value, suit, suffix))
+         errx (1, "Malloc");
+   }
    if (writeinline)
    {
       if (card)
@@ -499,16 +509,6 @@ writecard (xml_t root, char suit, char value)
       xml_element_write (stdout, root, 1, 1);
    } else
    {
-      char *fn;
-      if (number)
-      {
-         if (!asprintf (&fn, "%s%03d%s.svg", prefix, number++, suffix))
-            errx (1, "Malloc");
-      } else
-      {
-         if (!asprintf (&fn, "%s%c%c%s.svg", prefix, value, suit, suffix))
-            errx (1, "Malloc");
-      }
       FILE *f = f = fopen (fn, "w");
       if (!f)
          err (1, "Cannot write %s", fn);
@@ -1243,7 +1243,7 @@ makecard (char suit, char value)
                pip (0, 0, bw);  // Simple big Ace
             if (suit == 'S' && qr)
             {                   // QR on ace
-               unsigned int S = 0;
+               int S = 0;
                unsigned char *grid = qr_encode (strlen (qr), qr, 0, QR_ECL_L, 0, 0, &S, 0, 0, 0, 0);
                if (grid)
                {
@@ -1302,15 +1302,6 @@ makecard (char suit, char value)
                   xml_add (x, "@fill", black);
                   xml_add (x, "@text-anchor", "middle");
                   xml_add (x, "@y", tho (bh / 2 - THO * fontsize / 2));
-               }
-               if (duplimate)
-               {
-                  xml_t x = xml_addf (root, "+text", "Barcode patented by Jannersten, licence no. %s", duplimate);
-                  xml_addf (x, "@font-size", "6");
-                  xml_add (x, "@font-family", "Bariol");
-                  xml_add (x, "@text-anchor", "middle");
-                  xml_add (x, "@fill", black);
-                  xml_add (x, "@y", tho (bh / 2));
                }
             }
             if (suit == 'S')
@@ -1436,7 +1427,7 @@ main (int argc, const char *argv[])
          {"prefix", 0, POPT_ARG_STRING, &prefix, 0, "Filename prefix", "text"}, //
          {"number", 0, POPT_ARG_INT, &number, 0, "Filenames using number", "start"},    //
          {"suffix", 0, POPT_ARG_STRING, &suffix, 0, "Filename suffix", "text"}, //
-         {"duplimate", 0, POPT_ARG_STRING, &duplimate, 0, "Barcode", "licence no"},     //
+         {"duplimate", 0, POPT_ARG_NONE, &duplimate, 0, "Barcode"},     //
          {"aspect", 0, POPT_ARG_NONE, &aspect, 0, "Fix aspect ratio of court cards"},   //
          {"no-width-on-use", 0, POPT_ARG_NONE, &nowidthonuse, 0, "No width attribute on use objects"},  //
          {"card", 0, POPT_ARG_STRING, &card, 0, "One card", "[value][suit]"},   //
@@ -1539,14 +1530,8 @@ main (int argc, const char *argv[])
       ace1 = getenv (ace1 + 1);
    if (*ace2 == '$')
       ace2 = getenv (ace2 + 1);
-   if (duplimate && *duplimate == '$')
-      duplimate = getenv (duplimate + 1);
-   if (duplimate && !*duplimate)
-      duplimate = NULL;
    if (qr && *qr == '$')
       qr = getenv (qr + 1);
-   if (qr && !*qr)
-      duplimate = NULL;
    colour[0] = black;
    colour[1] = red;
    if (fourcolour)
