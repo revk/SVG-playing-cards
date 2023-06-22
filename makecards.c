@@ -1381,8 +1381,8 @@ makecard (char suit, char value)
 int
 main (int argc, const char *argv[])
 {
+   poptContext optCon;          // context for parsing command-line options
    {                            // POPT
-      poptContext optCon;       // context for parsing command-line options
       const struct poptOption optionsTable[] = {
          {"dir", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &dir, 0, "Directory", "path"},       //
          {"ghost", 0, POPT_ARG_NONE, &ghost, 0, "Ghost"},       //
@@ -1464,7 +1464,6 @@ main (int argc, const char *argv[])
          poptPrintUsage (optCon, stderr, 0);
          return -1;
       }
-      poptFreeContext (optCon);
    }
    // Presets
    if (poker && bridge)
@@ -1626,6 +1625,7 @@ main (int argc, const char *argv[])
             endcard ();
          }
    }
+   poptFreeContext (optCon);
    return 0;
 }
 
