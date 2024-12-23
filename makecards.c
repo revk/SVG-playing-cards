@@ -30,6 +30,7 @@ int ph = 70,
    vh = 32;
 int ghost = 0;
 int plain = 0;
+int plainpip = 0;
 int box = 0;
 int toponly = 0;
 int indexonly = 0;
@@ -1033,7 +1034,7 @@ makecard (char suit, char value)
    makebox (&bw, &bh, suit, value);
    xml_t root = makeroot (suit, value);
 
-   int layer = makecourt (root, suit, value);;
+   int layer = makecourt (root, suit, value);
 
    makebackground (root, suit, value);
 
@@ -1131,7 +1132,7 @@ makecard (char suit, char value)
       }
       void side2 (int y)
       {                         // half the pips
-         if (indexonly)
+         if (indexonly || plainpip)
             return;
          // Face
          if (strchr ("456789TE", value))
@@ -1240,7 +1241,7 @@ makecard (char suit, char value)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
          }
-         if (indexonly)
+         if (indexonly || plainpip)
             return;
          if (pips)
             side2 (-py);
@@ -1340,7 +1341,7 @@ makecard (char suit, char value)
                   free (d);
                }
             }
-         } else if (!symmetric)
+         } else if (!symmetric && !plainpip)
             pip (0, 0, THO * ph);       // Normal (Plain)
          if ((one || suit == 'S') && !acespadesimage && (*ace1 || *ace2) && strcasecmp (ace, "Goodall"))
          {                      // Ace of spades
@@ -1374,7 +1375,7 @@ makecard (char suit, char value)
             }
             if (suit == 'S')
                addtext (root);
-            if (symmetric && !strcasecmp (ace, "Plain"))
+            if (symmetric && !strcasecmp (ace, "Plain") && !plainpip)
             {
                xml_t g = xml_element_add (root, "g");
                xml_add (g, "@transform", "rotate(180)");
@@ -1383,7 +1384,16 @@ makecard (char suit, char value)
          }
       }
       side (1, 1);
-      if (!symmetric && !indexonly)
+      if (plainpip && ((value == 'A' && !strcasecmp (ace, "Plain")) || strchr ("0123456789TE", value)))
+      {
+         xml_t x = addsymbolvalue (g, suit, value);
+         xml_add (x, "@height", tho (bw));
+         if (!nowidthonuse)
+            xml_add (x, "@width", tho (bw));
+         xml_add (x, "@x", tho (-bw / 2));
+         xml_add (x, "@y", tho (-bw / 2));
+      }
+      if (!symmetric && !indexonly && !plainpip)
       {
          if (suit == 'C' && value == '9' && !noflip)
             pip (0, -THO * ph / 10, THO * ph);
@@ -1416,7 +1426,6 @@ makecard (char suit, char value)
          xml_add (box, "@stroke", ghost ? black : "#44F");
          xml_add (box, "@fill", "none");
       }
-
    }
 
    if (suit == 'J' && !indexonly)
@@ -1465,6 +1474,7 @@ main (int argc, const char *argv[])
          {"blue", 0, POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &blue, 0, "Colour of blue"},  //
          {"four-colour", 0, POPT_ARG_NONE, &fourcolour, 0, "4 colour deck"},    //
          {"plain", 0, POPT_ARG_NONE, &plain, 0, "Plain court cards"},   //
+         {"plain-pip", 0, POPT_ARG_NONE, &plainpip, 0, "Plain pips (numbers)"}, //
          {"box", 0, POPT_ARG_NONE, &box, 0, "Box on all cards"},        //
          {"pip", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &pipn, 0, "Pip style", "N"},      //
          {"value", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &valuen, 0, "Value style", "N"},        //
@@ -1796,8 +1806,8 @@ struct value_s value_path[VALUES][16] = {       // Stroke 80, target -285 to 285
    {80, "M250 -100A250 250 0 0 1 -250 -100L-250 -210A250 250 0 0 1 250 -210L250 210A250 250 0 0 1 0 460C-150 460 -180 400 -200 375"},	// 9
    {80, "M-260 430L-260 -430M-50 0L-50 -310A150 150 0 0 1 250 -310L250 310A150 150 0 0 1 -50 310Z"},	// T (10)
    {80, "M-180 430L-180 -430M180 430L180 -430"},	// E (11)
-   {80, "M-320 450L-320 -430M-125 -225C-145 -265 -100 -460 100 -460C 300 -460 325 -325 325 -225C325 -25 -125 160 -125 460L325 460L325 300"},	// J (12)
-   {80, "M-320 450L-320 -450M-150 -320L-150 -460L300 -460L-10 -80C-00 -90 50 -120 100 -120C300 -120 350 0 350 150C350 350 270 460 70 460C-130 460 -160 300 -160 300"},	// Q (13)
+   {80, "M-320 460L-320 -430M-125 -225C-145 -265 -100 -460 100 -460C 300 -460 325 -325 325 -225C325 -25 -125 160 -125 460L325 460L325 300"},	// J (12)
+   {80, "M-320 450L-320 -460M-150 -320L-150 -460L300 -460L-10 -80C-00 -90 50 -120 100 -120C300 -120 350 0 350 150C350 350 270 460 70 460C-130 460 -160 300 -160 300"},	// Q (13)
    {80, "M-320 450L-320 -450M150 460L350 460M250 460L250 -460L-200 175L-200 200L370 200"},	// K (14)
    {80, "M-320 450L-320 -450M270 -460L-75 -460L-110 -115C-110 -115 -100 -200 100 -200C200 -200 355 -80 355 120C355 320 280 460 80 460C-120 460 -155 285 -155 285"},	// A (15)
    },
