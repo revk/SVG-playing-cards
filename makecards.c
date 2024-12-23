@@ -19,6 +19,7 @@
 #include <iec18004.h>
 #include <image.h>
 
+int randbase = 0;
 int debug = 0;
 int poker = 0;
 int bridge = 0;
@@ -43,6 +44,7 @@ int modern = 0;
 int zero = 0;
 int one = 0;
 int eleven = 0;
+int extraaces = 0;
 int noborder = 0;
 int bleed = 0;
 int corner = 12;
@@ -84,8 +86,11 @@ const char *suffix = "";
 const char *width = "2.5in";
 const char *height = "3.5in";
 const char *backcolour = NULL;
-const char *backimage = NULL;
 const char *frontcolour = NULL;
+const char *acespadesimage = NULL;
+const char *backimage = NULL;
+const char *joker1image = NULL;
+const char *joker2image = NULL;
 
 const char *dir = NULL;
 const char suits[] = "SHCD";
@@ -101,7 +106,7 @@ struct pip_s
    int height;
 } pip_path[PIPS][4];
 
-#define	VALUES 2
+#define	VALUES 3
 struct value_s
 {
    int stroke;
@@ -191,7 +196,8 @@ adddefB (xml_t e, char value)
          int m = THO * pattern / 2,
             q = THO * pattern / 12;
          xml_t path = xml_element_add (pat, "path");
-         xml_addf (path, "@d", "M0 0h%sv%sh%szM%s %sh%sv%sh%sz", tho (m), tho (m), tho (-m), tho (m), tho (m), tho (m), tho (m), tho (-m));
+         xml_addf (path, "@d", "M0 0h%sv%sh%szM%s %sh%sv%sh%sz", tho (m), tho (m), tho (-m), tho (m), tho (m), tho (m), tho (m),
+                   tho (-m));
          xml_add (path, "@fill", colour[(value - '1') & 3]);
          int x,
            y;
@@ -199,11 +205,13 @@ adddefB (xml_t e, char value)
             for (y = 0; y < 3; y++)
             {
                path = xml_element_add (pat, "path");
-               xml_addf (path, "@d", "M%s %sl%s %sl%s %sl%s %sl%s %sl%s %sz", tho (x * m), tho (y * m - q * 2), tho (q), tho (q), tho (-q * 2), tho (q * 2), tho (q), tho (q), tho (q), tho (-q), tho (-q * 2), tho (-q * 2));
+               xml_addf (path, "@d", "M%s %sl%s %sl%s %sl%s %sl%s %sl%s %sz", tho (x * m), tho (y * m - q * 2), tho (q), tho (q),
+                         tho (-q * 2), tho (q * 2), tho (q), tho (q), tho (q), tho (-q), tho (-q * 2), tho (-q * 2));
                xml_add (path, "@opacity", "0.75");
                xml_add (path, "@fill", (x + y) & 1 ? "white" : value == '2' ? black : red);
                path = xml_element_add (pat, "path");
-               xml_addf (path, "@d", "M%s %sl%s %sl%s %sl%s %sl%s %sl%s %sz", tho (x * m + q * 2), tho (y * m), tho (-q), tho (q), tho (-q * 2), tho (-q * 2), tho (-q), tho (q), tho (q), tho (q), tho (q * 2), tho (-q * 2));
+               xml_addf (path, "@d", "M%s %sl%s %sl%s %sl%s %sl%s %sl%s %sz", tho (x * m + q * 2), tho (y * m), tho (-q), tho (q),
+                         tho (-q * 2), tho (-q * 2), tho (-q), tho (q), tho (q), tho (q), tho (q * 2), tho (-q * 2));
                xml_add (path, "@opacity", "0.75");
                xml_add (path, "@fill", (x + y) & 1 ? value == '2' ? black : red : "white");
             }
@@ -345,19 +353,30 @@ addsymbolvalue (xml_t e, char suit, char value)
          defs = xml_element_add_ns_after (root, NULL, "defs", root);
       char *s = strchr (suits, suit);
       char *v = strchr (values, value);
-      xml_t symbol = xml_element_add_ns_after (defs, NULL, "symbol", defs);
-      xml_add (symbol, "@id", id);
-      xml_add (symbol, "@viewBox", "-500 -500 1000 1000");
-      xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
-      xml_t path = xml_element_add (symbol, "path");
-      xml_add (path, "@d", value_path[valuen][v - values].path);
-      xml_add (path, "@stroke", ghost ? black : colour[s - suits]);
-      if (grey && ((s - suits) & 2))
-         xml_add (path, "@opacity", "0.5");
-      xml_addf (path, "@stroke-width", "%d", value_path[valuen][v - values].stroke);
-      xml_add (path, "@stroke-linecap", "square");
-      xml_add (path, "@stroke-miterlimit", "1.5");
-      xml_add (path, "@fill", "none");
+      if (v)
+      {
+         xml_t symbol = xml_element_add_ns_after (defs, NULL, "symbol", defs);
+         xml_add (symbol, "@id", id);
+         xml_add (symbol, "@viewBox", "-500 -500 1000 1000");
+         xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
+         xml_t path = xml_element_add (symbol, "path");
+         int n = v - values;
+         if (valuen == 2)
+         {                      // Numeric, needs adjustment
+            if (!one && n == 15)
+               n = 1;           // Ace 1 unless we have a 1
+            if (!eleven && n > 11)
+               n--;
+         }
+         xml_add (path, "@d", value_path[valuen][n].path);
+         xml_add (path, "@stroke", ghost ? black : colour[s - suits]);
+         if (grey && ((s - suits) & 2))
+            xml_add (path, "@opacity", "0.5");
+         xml_addf (path, "@stroke-width", "%d", value_path[valuen][n].stroke);
+         xml_add (path, "@stroke-linecap", "square");
+         xml_add (path, "@stroke-miterlimit", "1.5");
+         xml_add (path, "@fill", "none");
+      }
    }
    e = xml_element_add (e, "use");
    xml_addf (e, "@xlink:href", "#%s", id);
@@ -405,7 +424,8 @@ addsymbolFB (xml_t e)
       xml_add (symbol, "@viewBox", "0 0 150 120");
       xml_add (symbol, "@preserveAspectRatio", "xMinYMid");
       xml_t path = xml_element_add (symbol, "path");
-      xml_add (path, "@d", "M 0,120 L 0,36.5 A 36.5,36.5,0,0,1,36.5,0 L 113.5,0 A 36.5,36.5,0,0,1,141.42848,60 A 36.5,36.5,0,0,1,113.5,120 L 50,120,50,96,113.5,96 A 12.5,12.5,0,0,0,113.5,71 L 50,71,50,49,113.5,49 A 12.5,12.5,0,0,0,113.5,24 L 36.5,24 A 12.5,12.5,0,0,0,24,36.5 L 24,120 z");
+      xml_add (path, "@d",
+               "M 0,120 L 0,36.5 A 36.5,36.5,0,0,1,36.5,0 L 113.5,0 A 36.5,36.5,0,0,1,141.42848,60 A 36.5,36.5,0,0,1,113.5,120 L 50,120,50,96,113.5,96 A 12.5,12.5,0,0,0,113.5,71 L 50,71,50,49,113.5,49 A 12.5,12.5,0,0,0,113.5,24 L 36.5,24 A 12.5,12.5,0,0,0,24,36.5 L 24,120 z");
    }
    e = xml_element_add (e, "use");
    xml_addf (e, "@xlink:href", "#%s", id);
@@ -419,12 +439,14 @@ makebox (int *bwp, int *bhp, char suit, char value)
    int bh = THO * h - THO * topmargin * 2 - THO * vh * 8 / 5;   // Box height (tho)
    if (strchr ("JQK", value))
       bw += THO * courtgrow;    // extra width
-   if (suit == 'J' || (noleft && !right && (*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A') || (!strcasecmp (back, "Goodall") && suit == 'B'))
+   if (suit == 'J' || (noleft && !right && (*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A')
+       || (!strcasecmp (back, "Goodall") && suit == 'B'))
    {                            // Yes, use back margin, as this is bigger
       bw = THO * w - THO * (backmargin ? : margin) * 2;
       bh = THO * h - THO * (backmargin ? : topmargin) * 2;
    }
-   if (aspect || suit == 'J' || ((*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A') || (!strcasecmp (back, "Goodall") && suit == 'B'))
+   if (aspect || suit == 'J' || ((*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A')
+       || (!strcasecmp (back, "Goodall") && suit == 'B'))
    {                            // Aspect fix
       if (bh > bw * 2000 / 1300)
          bh = bw * 2000 / 1300;
@@ -444,7 +466,8 @@ makeroot (char suit, char value)
    root->tree->encoding = NULL;
    xml_add (root, "@width", width);
    xml_add (root, "@height", height);
-   xml_addf (root, "@viewBox", "%s %s %s %s", tho (-THO * w / 2 - THO * bleed), tho (-THO * h / 2 - THO * bleed), tho (THO * w + THO * bleed * 2), tho (THO * h + THO * bleed * 2));
+   xml_addf (root, "@viewBox", "%s %s %s %s", tho (-THO * w / 2 - THO * bleed), tho (-THO * h / 2 - THO * bleed),
+             tho (THO * w + THO * bleed * 2), tho (THO * h + THO * bleed * 2));
    xml_add (root, "@preserveAspectRatio", "none");      // Stretch to required size both ways
    xml_add (root, "@class", "card");
    if (value && suit)
@@ -529,7 +552,9 @@ makecourt (xml_t root, char suit, char value)
      bh;
    makebox (&bw, &bh, suit, value);
    int layer = 0;
-   if ((!plain && !indexonly && (strchr ("JQK", value) || suit == 'J')) || ((*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A') || (!strcasecmp (back, "Goodall") && suit == 'B'))
+   if ((!plain && !indexonly && (strchr ("JQK", value) || suit == 'J'))
+       || ((*ace1 || *ace2) && !strcasecmp (ace, "Goodall") && suit == 'S' && value == 'A') || (!strcasecmp (back, "Goodall")
+                                                                                                && suit == 'B'))
    {                            // Court/Joker
       int n = 12;               // Joker (whole card)
       if (ignis)
@@ -573,7 +598,9 @@ makecourt (xml_t root, char suit, char value)
          } else
             xml_add (p, "@fill", col);
          if (path == Stroke_path && suit == 'H' && value == 'K')
-            xml_addf (p, "@d", "%s%s", path[n], swap ? "M965.00982,185l25,30 -30,25m49.09178,-25h-19.09178m34.99998,25 -34.99998,-55v55" : "M1020,185l-25,30 30,25M975.9082,215H995m-35,25 35,-55v55");
+            xml_addf (p, "@d", "%s%s", path[n],
+                      swap ? "M965.00982,185l25,30 -30,25m49.09178,-25h-19.09178m34.99998,25 -34.99998,-55v55" :
+                      "M1020,185l-25,30 30,25M975.9082,215H995m-35,25 35,-55v55");
          else
             xml_add (p, "@d", path[n]);
       }
@@ -608,7 +635,9 @@ makecourt (xml_t root, char suit, char value)
                xml_addf (x, "@height", "%d", pips[n][p].s);
                if (!nowidthonuse)
                   xml_addf (x, "@width", "%d", pips[n][p].s);
-               xml_addf (x, "@transform", "translate(%d,%d)scale(1,%s)rotate(%d)translate(%d,%d)", pips[n][p].x, 2000 - pips[n][p].y, tho (THO * 20ULL * bw / 13ULL / bh), pips[n][p].r, -pips[n][p].s / 2, -pips[n][p].s / 2);
+               xml_addf (x, "@transform", "translate(%d,%d)scale(1,%s)rotate(%d)translate(%d,%d)", pips[n][p].x,
+                         2000 - pips[n][p].y, tho (THO * 20ULL * bw / 13ULL / bh), pips[n][p].r, -pips[n][p].s / 2,
+                         -pips[n][p].s / 2);
                xml_add (x, "@fill", "none");
                xml_add (x, "@stroke", ghost ? "white" : "none");
                if (ghost)
@@ -623,7 +652,8 @@ makecourt (xml_t root, char suit, char value)
             xml_addf (x, "@height", "%d", pips[n][p].s);
             if (!nowidthonuse)
                xml_addf (x, "@width", "%d", pips[n][p].s);
-            xml_addf (x, "@transform", "translate(%d,%d)scale(1,%s)rotate(%d)translate(%d,%d)", pips[n][p].x, 2000 - pips[n][p].y, tho (THO * 20ULL * bw / 13ULL / bh), pips[n][p].r, -pips[n][p].s / 2, -pips[n][p].s / 2);
+            xml_addf (x, "@transform", "translate(%d,%d)scale(1,%s)rotate(%d)translate(%d,%d)", pips[n][p].x, 2000 - pips[n][p].y,
+                      tho (THO * 20ULL * bw / 13ULL / bh), pips[n][p].r, -pips[n][p].s / 2, -pips[n][p].s / 2);
             if (notfilled)
                xml_add (x, "@fill", (ghost && !(s - suits) % 2) ? "black" : colour[s - suits]);
             if (pips[n][p].border)
@@ -643,7 +673,7 @@ makecourt (xml_t root, char suit, char value)
 void
 makearrows (xml_t root, int bw, int bh, int n)
 {
-   srand (n * 1000);
+   srand (n * 1000 + randbase);
    int x,
      y;
    for (y = -bh / 2 + THO * pattern / 2; y < 0; y += THO * pattern)
@@ -653,11 +683,13 @@ makearrows (xml_t root, int bw, int bh, int n)
          int q = rand () % (sizeof (arrowcolours) / sizeof (*arrowcolours));
          xml_t p = xml_element_add (root, "path");
          xml_addf (p, "@transform", "translate(%s,%s)rotate(%d)", tho (x), tho (y), r);
-         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000), tho (-THO * pattern / 2));
+         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000),
+                   tho (-THO * pattern / 2));
          xml_add (p, "@fill", arrowcolours[q]);
          p = xml_element_add (root, "path");
          xml_addf (p, "@transform", "translate(%s,%s)rotate(%d)", tho (-x), tho (-y), (r + 180) % 360);
-         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000), tho (-THO * pattern / 2));
+         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000),
+                   tho (-THO * pattern / 2));
          xml_add (p, "@fill", arrowcolours[q]);
       }
 }
@@ -665,7 +697,7 @@ makearrows (xml_t root, int bw, int bh, int n)
 void
 makemaze (xml_t root, int bw, int bh, int n)
 {
-   srand (n * 1000);
+   srand (n * 1000 + randbase);
    int D = 1 * THO;             // Dividing line
    int W = (bw - D * 2) / (THO * pattern),
       H = (bh - D * 2) / (THO * pattern);       // Units W/H
@@ -811,7 +843,19 @@ makemarked (xml_t root, int bw, int bh, char suit, char value)
       {
          int r = (rand () % 12) * 30;
          int q = rand () % (sizeof (arrowcolours) / sizeof (*arrowcolours));
-         if ((!noleft && x < -mx + THO * pattern * w && y < -my + THO * pattern * h) || (right && x > mx - THO * pattern * w && y < -my + THO * pattern * h) || (right && x < -mx + THO * pattern * w && y > my - THO * pattern * h) || (!noleft && x > mx - THO * pattern * w && y > my - THO * pattern * h))
+         if ((!noleft && x < -mx + THO * pattern * w && y < -my + THO * pattern * h)
+             || (right && x > mx - THO * pattern * w && y < -my + THO * pattern * h) || (right && x < -mx + THO * pattern * w
+                                                                                         && y > my - THO * pattern * h) || (!noleft
+                                                                                                                            && x >
+                                                                                                                            mx -
+                                                                                                                            THO *
+                                                                                                                            pattern
+                                                                                                                            * w
+                                                                                                                            && y >
+                                                                                                                            my -
+                                                                                                                            THO *
+                                                                                                                            pattern
+                                                                                                                            * h))
          {                      // Corner
             for (n = 0; n < 4 && (sx[n] != x || sy[n] != y); n++);
             if (n < 4 && s && v)
@@ -841,9 +885,27 @@ makemarked (xml_t root, int bw, int bh, char suit, char value)
             r = (r + 180) % 360;        // other end of card
          xml_t p = xml_element_add (root, "path");
          xml_addf (p, "@transform", "translate(%s,%s)rotate(%d)", tho (x), tho (y), r);
-         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000), tho (-THO * pattern / 2));
+         xml_addf (p, "@d", "M0 %sL%s %sh%sz", tho (-THO * pattern / 3), tho (THO * pattern / 4), tho (THO * pattern * 433 / 1000),
+                   tho (-THO * pattern / 2));
          xml_add (p, "@fill", arrowcolours[q]);
       }
+}
+
+void
+addsvg (xml_t root, const char *fn)
+{                               // We assume normal SVG with normal default units - this centres
+   xml_t image = xml_tree_read_file (fn);
+   if (!image)
+      errx (1, "Cannot open %s", fn);
+   double width = strtod (xml_get (image, "@width") ? : "", NULL);
+   double height = strtod (xml_get (image, "@height") ? : "", NULL);
+   xml_t g = xml_element_add (root, "g"),
+      e;
+   xml_addf (g, "@transform", "%stranslate(%s,%s)", width > height ? "rotate(90)" : "", tho (-THO * width / 2),
+             tho (-THO * height / 2));
+   while ((e = xml_element_next (image, NULL)))
+      xml_element_attach (g, e);
+   xml_tree_delete (image);
 }
 
 void
@@ -957,16 +1019,7 @@ makeback (int n, char suit, char value)
       }
    }
    if (backimage)
-   {
-      xml_t image = xml_tree_read_file (backimage);
-      if (!image)
-         err (1, "Cannot open %s", backimage);
-      xml_t g = xml_element_add (root, "g"),
-         e;
-      while ((e = xml_element_next (image, NULL)))
-         xml_element_attach (g, e);
-      xml_tree_delete (image);
-   }
+      addsvg (root, backimage);
    writecard (root, 'B', '1' + n);
 }
 
@@ -1012,7 +1065,8 @@ makecard (char suit, char value)
 
    if (s && v)
    {                            // Pips
-      if (box && (indexonly || plain || !strchr ("JQK", value)) && ((!*ace1 && !*ace2) || !strcasecmp (ace, "Goodall") || (!one && suit != 'S') || value != 'A' || indexonly || plain))
+      if (box && (indexonly || plain || !strchr ("JQK", value))
+          && ((!*ace1 && !*ace2) || !strcasecmp (ace, "Goodall") || (!one && suit != 'S') || value != 'A' || indexonly || plain))
       {                         // Box (background)
          xml_t box = adddefX (root, bw, bh, suit, value);
          if (!nowidthonuse)
@@ -1110,7 +1164,8 @@ makecard (char suit, char value)
             else
                pip (-px, y / 3, THO * ph);      // Left centre line
          }
-         if (symmetric && (!noflip || y > 0) && ((!one && suit != 'S') || value != 'A' || !strcasecmp (ace, "Plain")) && strchr ("A13579E", value))
+         if (symmetric && (!noflip || y > 0) && ((!one && suit != 'S') || value != 'A' || !strcasecmp (ace, "Plain"))
+             && strchr ("A13579E", value))
             addclippathQ (pip (0, 0, THO * ph), suit);
       }
       void side (int pips, int idices)
@@ -1150,13 +1205,18 @@ makecard (char suit, char value)
             {
                if (ghost && colour[s - suits] != black)
                {
-                  xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2, -THO * h / 2 + THO * vh + THO * (topmargin > corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+                  xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2,
+                                  -THO * h / 2 + THO * vh + THO * (topmargin >
+                                                                   corner ? topmargin : corner) + THO * pipmargin + ph2 / 2,
+                                  ph2);
                   xml_add (p2, "@stroke", black);
                   xml_add (p2, "@stroke-width", "100");
                   xml_add (p2, "@stroke-linejoin", "round");
                   xml_add (p2, "@stroke-linecap", "round");
                }
-               xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2, -THO * h / 2 + THO * vh + THO * (topmargin > corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+               xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2,
+                               -THO * h / 2 + THO * vh + THO * (topmargin >
+                                                                corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
                if (ghost)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
@@ -1164,13 +1224,18 @@ makecard (char suit, char value)
             {
                if (ghost && colour[s - suits] != black)
                {
-                  xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh, -THO * h / 2 + THO * vh + THO * (topmargin > corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+                  xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh,
+                                  -THO * h / 2 + THO * vh + THO * (topmargin >
+                                                                   corner ? topmargin : corner) + THO * pipmargin + ph2 / 2,
+                                  ph2);
                   xml_add (p2, "@stroke", black);
                   xml_add (p2, "@stroke-width", "100");
                   xml_add (p2, "@stroke-linejoin", "round");
                   xml_add (p2, "@stroke-linecap", "round");
                }
-               xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh, -THO * h / 2 + THO * vh + THO * (topmargin > corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+               xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh,
+                               -THO * h / 2 + THO * vh + THO * (topmargin >
+                                                                corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
                if (ghost)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
@@ -1185,7 +1250,7 @@ makecard (char suit, char value)
             int y = bh / 2 - bh * 10 / 100,
                sx = bw * (!pipn ? 32 : 35) / 100;       // Size and position that should fit
             if (bh < bw * 20 / 13)
-               sx = (unsigned long long) s *(unsigned long long) bh *13ULL / (unsigned long long) bw / 20ULL;
+               sx = (unsigned long long) sx *(unsigned long long) bh *13ULL / (unsigned long long) bw / 20ULL;
             sx -= THO * courtmargin;
             int x = bw / 2 - pipwidth (suit, sx / 2) - THO * courtmargin;
             //int p = (old ? bw * 2 / 7 : bw / 3);      // size
@@ -1217,7 +1282,9 @@ makecard (char suit, char value)
       }
       if (value == 'A' && !indexonly)
       {
-         if (suit == 'S' && !strcasecmp (ace, "Goodall") && layer)
+         if (suit == 'S' && acespadesimage)
+            addsvg (root, acespadesimage);
+         else if (suit == 'S' && !strcasecmp (ace, "Goodall") && layer)
          {
             xml_t ace = xml_element_add (g, "use");
             xml_add (ace, "@height", tho (bh));
@@ -1243,8 +1310,8 @@ makecard (char suit, char value)
                pip (0, 0, bw);  // Simple big Ace
             if (suit == 'S' && qr)
             {                   // QR on ace
-               int S = 0;
-               unsigned char *grid = qr_encode (strlen (qr), qr, 0, QR_ECL_L, 0, 0, &S, 0, 0, 0, 0);
+               unsigned int S = 0;
+               unsigned char *grid = qr_encode (strlen (qr), qr, 0, QR_ECL_L, 0, 0, &S);
                if (grid)
                {
                   int x,
@@ -1265,7 +1332,8 @@ makecard (char suit, char value)
                   ImageFree (i);
                   free (grid);
                   xml_t q = xml_element_add (root, "path");
-                  xml_addf (q, "@transform", "translate(0,-10)rotate(45)scale(%s)translate(%d,%d)", tho (bw * 3 / S / 10), -S / 2, -S / 2);
+                  xml_addf (q, "@transform", "translate(0,-10)rotate(45)scale(%s)translate(-%u,-%u)", tho (bw * 3 / S / 10), S / 2,
+                            S / 2);
                   xml_add (q, "@fill", frontcolour ? : "white");
                   xml_add (q, "@stroke", "none");
                   xml_add (q, "@d", d);
@@ -1274,7 +1342,7 @@ makecard (char suit, char value)
             }
          } else if (!symmetric)
             pip (0, 0, THO * ph);       // Normal (Plain)
-         if ((one || suit == 'S') && (*ace1 || *ace2) && strcasecmp (ace, "Goodall"))
+         if ((one || suit == 'S') && !acespadesimage && (*ace1 || *ace2) && strcasecmp (ace, "Goodall"))
          {                      // Ace of spades
             void addtext (xml_t e)
             {
@@ -1353,7 +1421,11 @@ makecard (char suit, char value)
 
    if (suit == 'J' && !indexonly)
    {                            // Joker
-      if (plain)
+      if (joker1image && value == '1')
+         addsvg (root, joker1image);
+      else if (joker2image && value == '2')
+         addsvg (root, joker2image);
+      else if (plain)
       {
          xml_t x = xml_add (root, "+text", "Joker");
          xml_add (x, "@font-size", "80");
@@ -1381,8 +1453,9 @@ makecard (char suit, char value)
 int
 main (int argc, const char *argv[])
 {
-   poptContext optCon;          // context for parsing command-line options
+   randbase = time (0);
    {                            // POPT
+      poptContext optCon;       // context for parsing command-line options
       const struct poptOption optionsTable[] = {
          {"dir", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &dir, 0, "Directory", "path"},       //
          {"ghost", 0, POPT_ARG_NONE, &ghost, 0, "Ghost"},       //
@@ -1411,6 +1484,7 @@ main (int argc, const char *argv[])
          {"zero", 0, POPT_ARG_NONE, &zero, 0, "Include a zero"},        //
          {"one", 0, POPT_ARG_NONE, &one, 0, "Include a one"},   //
          {"eleven", 0, POPT_ARG_NONE, &eleven, 0, "Include an eleven"}, //
+         {"extra-aces", 0, POPT_ARG_NONE, &extraaces, 0, "Extra aces"}, //
          {"ignis", 0, POPT_ARG_NONE, &ignis, 0, "Ignis Jokers"},        //
          {"modern", 0, POPT_ARG_NONE, &modern, 0, "Modern facing of court cards"},      //
          {"reverse", 0, POPT_ARG_NONE, &reverse, 0, "Reverse facing of court cards"},   //
@@ -1437,7 +1511,10 @@ main (int argc, const char *argv[])
          {"backs", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &backs, 0, "Backs", "N"},       //
          {"back", 0, POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &back, 0, "Back pattern", "Diamond/Arrows/Marked/Goodall/AA/FireBrick/Plain"},        //
          {"back-colour", 0, POPT_ARG_STRING, &backcolour, 0, "Back background colour", "svg-colour"},
-         {"back-image", 0, POPT_ARG_STRING, &backimage, 0, "Back overlay image", "svg-filename"},
+         {"ace-spades-image", 0, POPT_ARG_STRING, &acespadesimage, 0, "Aces of spades image", "svg-filename"},
+         {"back-image", 0, POPT_ARG_STRING, &backimage, 0, "Back image", "svg-filename"},
+         {"joker1-image", 0, POPT_ARG_STRING, &joker1image, 0, "Joker1 image", "svg-filename"},
+         {"joker2-image", 0, POPT_ARG_STRING, &joker2image, 0, "Joker2 image", "svg-filename"},
          {"front-colour", 0, POPT_ARG_STRING, &frontcolour, 0, "Front background colour", "svg-colour"},
          {"ace", 0, POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &ace, 0, "Ace of Spades", "Fancy/Large/Plain/Goodall"},        //
          {"ace1", 0, POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &ace1, 0, "Line 1 on ace", "text"},   //
@@ -1464,6 +1541,7 @@ main (int argc, const char *argv[])
          poptPrintUsage (optCon, stderr, 0);
          return -1;
       }
+      poptFreeContext (optCon);
    }
    // Presets
    if (poker && bridge)
@@ -1591,9 +1669,12 @@ main (int argc, const char *argv[])
             if (!one && strcasecmp (ace, "None"))
                docard (suits[s], 'A');
             for (v = 0; values[v]; v++)
-               if ((values[v] != 'A' && values[v] != '0' && values[v] != 'E' && values[v] != '1') || (one && values[v] == '1') || (eleven && values[v] == 'E'))
+               if ((values[v] != 'A' && values[v] != '0' && values[v] != 'E' && values[v] != '1') || (one && values[v] == '1')
+                   || (eleven && values[v] == 'E'))
                   docard (suits[s], values[v]);
             if (one && strcasecmp (ace, "None"))
+               docard (suits[s], 'A');
+            if (extraaces)
                docard (suits[s], 'A');
          }
          for (v = 0; v < jokers && v < 9; v++)
@@ -1625,7 +1706,6 @@ main (int argc, const char *argv[])
             endcard ();
          }
    }
-   poptFreeContext (optCon);
    return 0;
 }
 
@@ -1678,8 +1758,8 @@ struct value_s value_path[VALUES][16] = {       // Stroke 80, target -285 to 285
    {80, "M-265 -320L-265 -460L265 -460C135 -200 -90 100 -90 460"},	// 7
    {80, "M-1 -50A205 205 0 1 1 1 -50L-1 -50A255 255 0 1 0 1 -50Z"},	// 8
    {80, "M250 -100A250 250 0 0 1 -250 -100L-250 -210A250 250 0 0 1 250 -210L250 210A250 250 0 0 1 0 460C-150 460 -180 400 -200 375"},	// 9
-   {80, "M-260 430L-260 -430M-50 0L-50 -310A150 150 0 0 1 250 -310L250 310A150 150 0 0 1 -50 310Z"},	// T
-   {80, "M-180 430L-180 -430M180 430L180 -430"},	// E
+   {80, "M-260 430L-260 -430M-50 0L-50 -310A150 150 0 0 1 250 -310L250 310A150 150 0 0 1 -50 310Z"},	// T (10)
+   {80, "M-180 430L-180 -430M180 430L180 -430"},	// E (11)
    {80, "M50 -460L250 -460M150 -460L150 250A100 100 0 0 1 -250 250L-250 220"},	// J
    {80, "M-260 100C40 100 -40 460 260 460M-175 0L-175 -285A175 175 0 0 1 175 -285L175 285A175 175 0 0 1 -175 285Z"},	// Q
    {80, "M-285 -460L-85 -460M-185 -460L-185 460M-285 460L-85 460M85 -460L285 -460M185 -440L-170 155M85 460L285 460M185 440L-10 -70"},	// K
@@ -1702,7 +1782,25 @@ struct value_s value_path[VALUES][16] = {       // Stroke 80, target -285 to 285
    {160, "M-160 -200v60M0 -420v500M160 -200v60M-160 240v60M160 240v60"},	//Q
    {160, "M-160 -420v280M0 -420v720M-160 240v60"},	//K
    {160, "M-160 -420v60M0 -420v60M160 -420v720M-160 20v60M0 20v60"},	// A
-   }
+   },
+  {				// Numeric
+   {80, "M-175 0L-175 -285A175 175 0 0 1 175 -285L175 285A175 175 0 0 1 -175 285Z"},	// 0
+   {80, "M0 430L0 -430"},	// 1
+   {80, "M-225 -225C-245 -265 -200 -460 0 -460C 200 -460 225 -325 225 -225C225 -25 -225 160 -225 460L225 460L225 300"},	// 2
+   {80, "M-250 -320L-250 -460L200 -460L-110 -80C-100 -90 -50 -120 0 -120C200 -120 250 0 250 150C250 350 170 460 -30 460C-230 460 -260 300 -260 300"},	// 3
+   {80, "M50 460L250 460M150 460L150 -460L-300 175L-300 200L270 200"},	// 4
+   {80, "M170 -460L-175 -460L-210 -115C-210 -115 -200 -200 0 -200C100 -200 255 -80 255 120C255 320 180 460 -20 460C-220 460 -255 285 -255 285"},	// 5
+   {80, "M-250 100A250 250 0 0 1 250 100L250 210A250 250 0 0 1 -250 210L-250 -210A250 250 0 0 1 0 -460C150 -460 180 -400 200 -375"},	// 6
+   {80, "M-265 -320L-265 -460L265 -460C135 -200 -90 100 -90 460"},	// 7
+   {80, "M-1 -50A205 205 0 1 1 1 -50L-1 -50A255 255 0 1 0 1 -50Z"},	// 8
+   {80, "M250 -100A250 250 0 0 1 -250 -100L-250 -210A250 250 0 0 1 250 -210L250 210A250 250 0 0 1 0 460C-150 460 -180 400 -200 375"},	// 9
+   {80, "M-260 430L-260 -430M-50 0L-50 -310A150 150 0 0 1 250 -310L250 310A150 150 0 0 1 -50 310Z"},	// T (10)
+   {80, "M-180 430L-180 -430M180 430L180 -430"},	// E (11)
+   {80, "M-320 450L-320 -430M-125 -225C-145 -265 -100 -460 100 -460C 300 -460 325 -325 325 -225C325 -25 -125 160 -125 460L325 460L325 300"},	// J (12)
+   {80, "M-320 450L-320 -450M-150 -320L-150 -460L300 -460L-10 -80C-00 -90 50 -120 100 -120C300 -120 350 0 350 150C350 350 270 460 70 460C-130 460 -160 300 -160 300"},	// Q (13)
+   {80, "M-320 450L-320 -450M150 460L350 460M250 460L250 -460L-200 175L-200 200L370 200"},	// K (14)
+   {80, "M-320 450L-320 -450M270 -460L-75 -460L-110 -115C-110 -115 -100 -200 100 -200C200 -200 355 -80 355 120C355 320 280 460 80 460C-120 460 -155 285 -155 285"},	// A (15)
+   },
 	  // *INDENT-ON*
 };
 
