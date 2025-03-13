@@ -31,6 +31,7 @@ int ph = 70,
 int ghost = 0;
 int plain = 0;
 int plainpip = 0;
+int singlepip = 0;
 int box = 0;
 int toponly = 0;
 int indexonly = 0;
@@ -72,8 +73,8 @@ int valuen = 0;
 int duplimate = 0;
 const char *back = "Diamond";
 const char *ace = "Fancy";
-const char *ace1 = "www.me.uk";
-const char *ace2 = "/cards/";
+const char *ace1 = "cards.revk.uk";
+const char *ace2 = "";
 const char *qr = NULL;
 const char *fontfamily = NULL;
 const char *fontweight = NULL;
@@ -1132,7 +1133,7 @@ makecard (char suit, char value)
       }
       void side2 (int y)
       {                         // half the pips
-         if (indexonly || plainpip)
+         if (indexonly || plainpip || singlepip)
             return;
          // Face
          if (strchr ("456789TE", value))
@@ -1241,7 +1242,7 @@ makecard (char suit, char value)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
          }
-         if (indexonly || plainpip)
+         if (indexonly || plainpip || singlepip)
             return;
          if (pips)
             side2 (-py);
@@ -1270,7 +1271,7 @@ makecard (char suit, char value)
       // One side
       if (strchr ("JQK", value) && !indexonly)
       {                         // Court
-         if (!layer)
+         if (!layer && !singlepip)
          {
             xml_t x = addsymbolvalue (g, suit, value);
             xml_add (x, "@height", tho (bw));
@@ -1281,11 +1282,11 @@ makecard (char suit, char value)
          } else
             court (1, ghost);
       }
-      if (value == 'A' && !indexonly)
+      if ((value == 'A' && !indexonly) || (singlepip && (!strchr ("JQK", value) || plain)))
       {
-         if (suit == 'S' && acespadesimage)
+         if (suit == 'S' && value == 'A' && acespadesimage)
             addsvg (root, acespadesimage);
-         else if (suit == 'S' && !strcasecmp (ace, "Goodall") && layer)
+         else if (suit == 'S' && value == 'A' && !strcasecmp (ace, "Goodall") && layer)
          {
             xml_t ace = xml_element_add (g, "use");
             xml_add (ace, "@height", tho (bh));
@@ -1293,9 +1294,9 @@ makecard (char suit, char value)
             xml_add (ace, "@x", tho (-bw / 2));
             xml_add (ace, "@y", tho (-bh / 2));
             xml_addf (ace, "@xlink:href", "#%c%c%d", suit, value, 1);
-         } else if ((!strcasecmp (ace, "Large") || !strcasecmp (ace, "Fancy")) && (one || suit == 'S'))
+         } else if ((!strcasecmp (ace, "Large") || !strcasecmp (ace, "Fancy")) && (one || suit == 'S' || singlepip))
          {
-            if (!strcasecmp (ace, "Fancy") && suit == 'S')
+            if (!strcasecmp (ace, "Fancy") && suit == 'S' && value == 'A')
             {
                xml_t x = pip (0, 0, bw);
                xml_add (x, "@stroke", colour[0]);
@@ -1309,7 +1310,7 @@ makecard (char suit, char value)
                xml_add (x, "@fill", colour[0]);
             } else
                pip (0, 0, bw);  // Simple big Ace
-            if (suit == 'S' && qr)
+            if (suit == 'S' && qr && value == 'A')
             {                   // QR on ace
                unsigned int S = 0;
                unsigned char *grid = qr_encode (strlen (qr), qr, 0, QR_ECL_L, 0, 0, &S);
@@ -1373,9 +1374,9 @@ makecard (char suit, char value)
                   xml_add (x, "@y", tho (bh / 2 - THO * fontsize / 2));
                }
             }
-            if (suit == 'S')
+            if (suit == 'S' && value == 'A')
                addtext (root);
-            if (symmetric && !strcasecmp (ace, "Plain") && !plainpip)
+            if (symmetric && !strcasecmp (ace, "Plain") && !plainpip && !singlepip)
             {
                xml_t g = xml_element_add (root, "g");
                xml_add (g, "@transform", "rotate(180)");
@@ -1393,7 +1394,7 @@ makecard (char suit, char value)
          xml_add (x, "@x", tho (-bw / 2));
          xml_add (x, "@y", tho (-bw / 2));
       }
-      if (!symmetric && !indexonly && !plainpip)
+      if (!symmetric && !indexonly && !plainpip && !singlepip)
       {
          if (suit == 'C' && value == '9' && !noflip)
             pip (0, -THO * ph / 10, THO * ph);
@@ -1475,6 +1476,7 @@ main (int argc, const char *argv[])
          {"four-colour", 0, POPT_ARG_NONE, &fourcolour, 0, "4 colour deck"},    //
          {"plain", 0, POPT_ARG_NONE, &plain, 0, "Plain court cards"},   //
          {"plain-pip", 0, POPT_ARG_NONE, &plainpip, 0, "Plain pips (numbers)"}, //
+         {"single-pip", 0, POPT_ARG_NONE, &singlepip, 0, "Single pip (large suit)"},    //
          {"box", 0, POPT_ARG_NONE, &box, 0, "Box on all cards"},        //
          {"pip", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &pipn, 0, "Pip style", "N"},      //
          {"value", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &valuen, 0, "Value style", "N"},        //
