@@ -34,6 +34,7 @@ int plainpip = 0;
 int singlepip = 0;
 int box = 0;
 int toponly = 0;
+int splitindex = 0;
 int indexonly = 0;
 int noleft = 0;
 int noflip = 0;
@@ -1182,62 +1183,56 @@ makecard (char suit, char value)
          }
          if (idices && (!noleft || right))
          {                      // corners
+            int y = -THO * h / 2 + THO * (topmargin > corner ? topmargin : corner);
             // Value
-            if (!noleft)
-            {                   // Corner
+            if (!noleft && (!splitindex || !right))
+            {                   // Left value index
                xml_t x = addsymbolvalue (g, suit, value);
                xml_add (x, "@height", tho (THO * vh));
                if (!nowidthonuse)
                   xml_add (x, "@width", tho (THO * vh));
                xml_add (x, "@x", tho (-THO * w / 2 + THO * margin - THO * vh / 5));
-               xml_add (x, "@y", tho (-THO * h / 2 + THO * (topmargin > corner ? topmargin : corner)));
+               xml_add (x, "@y", tho (y));
             }
             if (right)
-            {
+            {                   // Right value index
                xml_t x = addsymbolvalue (g, suit, value);
                xml_add (x, "@height", tho (THO * vh));
                if (!nowidthonuse)
                   xml_add (x, "@width", tho (THO * vh));
                xml_add (x, "@x", tho (THO * w / 2 - THO * margin + THO * vh / 5 - THO * vh));
-               xml_add (x, "@y", tho (-THO * h / 2 + THO * (topmargin > corner ? topmargin : corner)));
+               xml_add (x, "@y", tho (y));
             }
             int ph2 = THO * vh * 65 / 100 * THO / pipwidth ('C', THO);  // Same width as value
+            y += THO * pipmargin + ph2 / 2;
+            if (!splitindex)
+               y += THO * vh;
             // pip
-            if (!noleft)
-            {
+            if (!noleft && (!splitindex || right))
+            {                   // Left suit index
                if (ghost && colour[s - suits] != black)
                {
-                  xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2,
-                                  -THO * h / 2 + THO * vh + THO * (topmargin >
-                                                                   corner ? topmargin : corner) + THO * pipmargin + ph2 / 2,
-                                  ph2);
+                  xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2, y, ph2);
                   xml_add (p2, "@stroke", black);
                   xml_add (p2, "@stroke-width", "100");
                   xml_add (p2, "@stroke-linejoin", "round");
                   xml_add (p2, "@stroke-linecap", "round");
                }
-               xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2,
-                               -THO * h / 2 + THO * vh + THO * (topmargin >
-                                                                corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+               xml_t p2 = pip (-THO * w / 2 + THO * margin - THO * vh / 5 + THO * vh / 2, y, ph2);
                if (ghost)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
-            if (right)
-            {
+            if ((right && !splitindex) || (!right && splitindex))
+            {                   // Right suite index
                if (ghost && colour[s - suits] != black)
                {
-                  xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh,
-                                  -THO * h / 2 + THO * vh + THO * (topmargin >
-                                                                   corner ? topmargin : corner) + THO * pipmargin + ph2 / 2,
-                                  ph2);
+                  xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh, y, ph2);
                   xml_add (p2, "@stroke", black);
                   xml_add (p2, "@stroke-width", "100");
                   xml_add (p2, "@stroke-linejoin", "round");
                   xml_add (p2, "@stroke-linecap", "round");
                }
-               xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh,
-                               -THO * h / 2 + THO * vh + THO * (topmargin >
-                                                                corner ? topmargin : corner) + THO * pipmargin + ph2 / 2, ph2);
+               xml_t p2 = pip (THO * w / 2 - THO * margin + THO * vh / 5 + THO * vh / 2 - THO * vh, y, ph2);
                if (ghost)
                   xml_add (p2, "@fill", colour[s - suits]);
             }
@@ -1296,20 +1291,23 @@ makecard (char suit, char value)
             xml_addf (ace, "@xlink:href", "#%c%c%d", suit, value, 1);
          } else if ((!strcasecmp (ace, "Large") || !strcasecmp (ace, "Fancy")) && (one || suit == 'S' || singlepip))
          {
+            int aw = bw * 3 / 2;
+            if (value == 'A' && (*ace1 || *ace2))
+               aw = bw;
             if (!strcasecmp (ace, "Fancy") && suit == 'S' && value == 'A')
             {
-               xml_t x = pip (0, 0, bw);
+               xml_t x = pip (0, 0, aw);
                xml_add (x, "@stroke", colour[0]);
                xml_add (x, "@stroke-width", "100");
                xml_add (x, "@stroke-dasharray", "100,100");
                xml_add (x, "@stroke-linecap", "round");
-               x = pip (0, 0, bw);
+               x = pip (0, 0, aw);
                xml_add (x, "@stroke", frontcolour ? : "white");
                xml_add (x, "@stroke-width", "50");
-               x = pip (0, 0, bw);
+               x = pip (0, 0, aw);
                xml_add (x, "@fill", colour[0]);
             } else
-               pip (0, 0, bw);  // Simple big Ace
+               pip (0, 0, aw);  // Simple big Ace
             if (suit == 'S' && qr && value == 'A')
             {                   // QR on ace
                unsigned int S = 0;
@@ -1334,8 +1332,8 @@ makecard (char suit, char value)
                   ImageFree (i);
                   free (grid);
                   xml_t q = xml_element_add (root, "path");
-                  xml_addf (q, "@transform", "translate(0,-10)rotate(45)scale(%s)translate(-%u,-%u)", tho (bw * 3 / S / 10), S / 2,
-                            S / 2);
+                  xml_addf (q, "@transform", "translate(0,-10)rotate(45)scale(%s)translate(-%u,-%u)", tho (aw * 3 / S / 10),
+                            S / 2, S / 2);
                   xml_add (q, "@fill", frontcolour ? : "white");
                   xml_add (q, "@stroke", "none");
                   xml_add (q, "@d", d);
@@ -1490,6 +1488,7 @@ main (int argc, const char *argv[])
          {"margin-pip", 0, POPT_ARG_INT, &pipmargin, 0, "Pip margin", "pixels"},        //
          {"court-grow", 0, POPT_ARG_INT, &courtgrow, 0, "Extra width on court cards", "pixels"},        //
          {"no-left", 0, POPT_ARG_NONE, &noleft, 0, "No indices on left"},       //
+         {"split-index", 0, POPT_ARG_NONE, &splitindex, 0, "Split index each side"},    //
          {"right", 0, POPT_ARG_NONE, &right, 0, "Indices on right"},    //
          {"top-only", 0, POPT_ARG_NONE, &toponly, 0, "Indices only on top of card"},    //
          {"index-only", 0, POPT_ARG_NONE, &indexonly, 0, "Indices only (i.e. no pips or court images)"},        //
@@ -1681,8 +1680,8 @@ main (int argc, const char *argv[])
             if (!one && strcasecmp (ace, "None"))
                docard (suits[s], 'A');
             for (v = 0; values[v]; v++)
-               if ((values[v] != 'A' && values[v] != '0' && values[v] != 'E' && values[v] != '1') || (one && values[v] == '1')
-                   || (eleven && values[v] == 'E'))
+               if ((values[v] != 'A' && values[v] != '0' && values[v] != 'E' && values[v] != '1')
+                   || (one && values[v] == '1') || (eleven && values[v] == 'E'))
                   docard (suits[s], values[v]);
             if (one && strcasecmp (ace, "None"))
                docard (suits[s], 'A');
@@ -1817,6 +1816,7 @@ struct value_s value_path[VALUES][16] = {       // Stroke 80, target -285 to 285
 };
 
 unsigned int duplimate_code[] = {
+
    0x2A4,                       // SA 010 1010 0100
    0x164,                       // S2 001 0110 0100
    0x264,                       // S3 010 0110 0100
